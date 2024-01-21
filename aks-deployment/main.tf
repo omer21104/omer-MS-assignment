@@ -16,30 +16,74 @@ resource "random_pet" "azurerm_kubernetes_cluster_dns_prefix" {
   prefix = "dns"
 }
 
+provider "azurerm" {
+  features {}
+}
+
 resource "azurerm_kubernetes_cluster" "k8s" {
   location            = azurerm_resource_group.rg.location
   name                = random_pet.azurerm_kubernetes_cluster_name.id
   resource_group_name = azurerm_resource_group.rg.name
   dns_prefix          = random_pet.azurerm_kubernetes_cluster_dns_prefix.id
 
-  identity {
-    type = "SystemAssigned"
-  }
-
   default_node_pool {
     name       = "agentpool"
     vm_size    = "Standard_D2_v2"
     node_count = var.node_count
   }
-  linux_profile {
-    admin_username = var.username
-
-    ssh_key {
-      key_data = jsondecode(azapi_resource_action.ssh_public_key_gen.output).publicKey
-    }
+  service_principal {
+    client_id     = var.appId
+    client_secret = var.password
   }
+  role_based_access_control_enabled = true
+
   network_profile {
     network_plugin    = "kubenet"
     load_balancer_sku = "standard"
+  }
+}
+resource "kubernetes_deployment" "bitcoin-tracker" {
+  metadata {
+    name = "bitcoin-tracker"
+    labels = {
+      App = "bitcoinTracker"
+    }
+  }
+
+  spec {
+    replicas = 1
+    selector {
+      match_labels = {
+        App = "bitcoinTracker"
+      }
+    }
+    template {
+      metadata {
+        labels = {
+          App = "bitcoinTracker"
+        }
+      }
+      spec {
+        container {
+          image = "omerregistery1.azurecr.io/bitcoin-tracker:v1.0.2"
+          name  = "bitcoin-tracker"
+
+          port {
+            container_port = 3000
+          }
+
+          resources {
+            limits = {
+              cpu    = "0.5"
+              memory = "512Mi"
+            }
+            requests = {
+              cpu    = "250m"
+              memory = "50Mi"
+            }
+          }
+        }
+      }
+    }
   }
 }
