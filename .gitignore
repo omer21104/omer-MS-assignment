@@ -26,3 +26,5 @@ terraform.rc
 
 # Exclude .tf files that are backup files
 *~.tf
+
+todo.txt

@@ -42,6 +42,8 @@ resource "azurerm_kubernetes_cluster" "k8s" {
     load_balancer_sku = "standard"
   }
 }
+
+##### k8s resources #####
 resource "kubernetes_deployment" "bitcoin-tracker" {
   metadata {
     name = "bitcoin-tracker"
@@ -85,5 +87,122 @@ resource "kubernetes_deployment" "bitcoin-tracker" {
         }
       }
     }
+  }
+}
+
+
+resource "kubernetes_service" "service_a" {
+  metadata {
+    name = "service-a"
+  }
+
+  spec {
+    selector = {
+      app = "service-a"
+    }
+
+    port {
+      protocol    = "TCP"
+      port        = 80
+      target_port = 3000
+    }
+  }
+}
+
+resource "kubernetes_service" "service_b" {
+  metadata {
+    name = "service-b"
+  }
+
+  spec {
+    selector = {
+      app = "service-b"
+    }
+
+    port {
+      protocol    = "TCP"
+      port        = 80
+      target_port = 8080
+    }
+  }
+}
+
+resource "kubernetes_ingress_v1" "ingress" {
+  metadata {
+    name = "ingress"
+  }
+
+  spec {
+    default_backend {
+      service {
+        name = "service-a"
+        port {
+          number = 3000
+        }
+      }
+    }
+
+    rule {
+      host = "dns-knowing-quail-3mffkysz.hcp.eastus.azmk8s.io"
+      http {
+        path {
+          backend {
+            service {
+              name = "service-a"
+              port {
+                number = 3000
+              }
+            }
+          }
+
+          path = "/service-A"
+        }
+
+        path {
+          backend {
+            service {
+              name = "service-b"
+              port {
+                number = 8080
+              }
+            }
+          }
+
+          path = "/service-B"
+        }
+      }
+    }
+  }
+}
+
+resource "kubernetes_network_policy" "service_a" {
+  metadata {
+    name = "service-a-policy"
+  }
+
+  spec {
+    pod_selector {
+      match_labels = {
+        app = "service-a"
+      }
+    }
+
+    policy_types = ["Ingress"]
+  }
+}
+
+resource "kubernetes_network_policy" "service_b" {
+  metadata {
+    name = "service-b-policy"
+  }
+
+  spec {
+    pod_selector {
+      match_labels = {
+        app = "service-b"
+      }
+    }
+
+    policy_types = ["Ingress"]
   }
 }
