@@ -19,6 +19,10 @@ app.get("/ready", (req, res) => {
   }
 });
 
+app.get("/service-A", (req, res) => {
+  res.status(200).send("Hello there!");
+});
+
 const taskId = setInterval(() => iterationHandler(), interval);
 
 app.listen(port, () => console.log("listening on port: ", port));

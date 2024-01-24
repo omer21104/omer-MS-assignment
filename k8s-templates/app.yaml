@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bitcoin-tracker
+  labels:
+    app: bitcoin-tracker
+spec:
+  containers:
+    - image: "omer21104/my-repo:v1.0.3"
+      # - image: "omerregistery1.azurecr.io/bitcoin-tracker:v1.0.3"
+      name: bitcoin-tracker-pod
+      ports:
+        - containerPort: 3000
+          protocol: TCP
+      livenessProbe:
+        httpGet:
+          path: /health
+          port: 3000
+        initialDelaySeconds: 3
+        periodSeconds: 5
+      readinessProbe:
+        httpGet:
+          path: /ready
+          port: 3000
+        initialDelaySeconds: 3
+        periodSeconds: 5
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bitcoin-tracker-svc
+spec:
+  selector:
+    app: bitcoin-tracker
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-b
+spec:
+  selector:
+    app: service-b
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bitcoin-tracker-ingress
+  # annotations:
+  #   kubernetes.io/ingress.class: azure/application-gateway
+spec:
+  ingressClassName: azure-application-gateway
+  rules:
+    - http:
+        paths:
+          - path: /service-A
+            backend:
+              service:
+                name: bitcoin-tracker-svc
+                port:
+                  number: 80
+            pathType: Prefix
+          - path: /service-B
+            backend:
+              service:
+                name: service-b
+                port:
+                  number: 80
+            pathType: Prefix
