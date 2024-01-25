@@ -3,7 +3,6 @@
 az login
 
 # Variables
-cluster_name="myAKSCluster"
 service_principal=deployment-sp
 
 # create service principal
